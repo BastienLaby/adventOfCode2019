@@ -50,11 +50,11 @@ def decode(instructionList, _input):
 
         if opcode == 99: return
 
-        if opcode == 1:
+        elif opcode == 1:
             instructionList[p3] = str(p1Value + p2Value)
             index += PARAM_COUNT[opcode] + 1
 
-        if opcode == 2:
+        elif opcode == 2:
             instructionList[p3] = str(p1Value * p2Value)
             index += PARAM_COUNT[opcode] + 1
 
