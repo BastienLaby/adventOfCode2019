@@ -2,55 +2,61 @@
 
 import copy
 
-initialOpcodeSequence = [1, 0, 0, 3, 1, 1, 2, 3, 1, 3, 4, 3, 1, 5, 0, 3, 2, 10, 1, 19, 1, 19, 5, 23, 1, 23, 9, 27, 2, 27, 6, 31, 1, 31, 6, 35, 2, 35, 9, 39, 1, 6, 39, 43, 2, 10, 43, 47, 1, 47, 9, 51, 1, 51, 6, 55, 1, 55, 6, 59, 2, 59, 10, 63, 1, 6, 63, 67, 2, 6, 67, 71, 1, 71, 5, 75, 2, 13, 75, 79, 1, 10, 79, 83, 1, 5, 83, 87, 2, 87, 10, 91, 1, 5, 91, 95, 2, 95, 6, 99, 1, 99, 6, 103, 2, 103, 6, 107, 2, 107, 9, 111, 1, 111, 5, 115, 1, 115, 6, 119, 2, 6, 119, 123, 1, 5, 123, 127, 1, 127, 13, 131, 1, 2, 131, 135, 1, 135, 10, 0, 99, 2, 14, 0, 0]
 
-# puzzle 1
-
-def decodeSequence(opcodeSequence):
-    for index in range(len(opcodeSequence))[::4]:
-        opcode = opcodeSequence[index]
+def decode(instructionLIst):
+    for index in range(len(instructionLIst))[::4]:
+        opcode = instructionLIst[index]
         if opcode == 99:
             break
         elif opcode == 1:
-            opcodeSequence[opcodeSequence[index + 3]] = opcodeSequence[opcodeSequence[index + 1]] + opcodeSequence[opcodeSequence[index + 2]]
+            instructionLIst[instructionLIst[index + 3]] = instructionLIst[instructionLIst[index + 1]] + instructionLIst[instructionLIst[index + 2]]
         elif opcode == 2:
-            opcodeSequence[opcodeSequence[index + 3]] = opcodeSequence[opcodeSequence[index + 1]] * opcodeSequence[opcodeSequence[index + 2]]
+            instructionLIst[instructionLIst[index + 3]] = instructionLIst[instructionLIst[index + 1]] * instructionLIst[instructionLIst[index + 2]]
         else:
             assert False, "Unknow opcode %s" % opcode
-    return opcodeSequence
+    return instructionLIst
 
-# puzzle 1 tests
 
-assert decodeSequence([1,0,0,0,99]) == [2,0,0,0,99]
-assert decodeSequence([2,3,0,3,99]) == [2,3,0,6,99]
-assert decodeSequence([2,4,4,5,99,0]) == [2,4,4,5,99,9801]
-assert decodeSequence([1,1,1,4,99,5,6,0,99]) == [30,1,1,4,2,5,6,0,99]
-
-# puzzle 1 answer
-
-sequence = copy.deepcopy(initialOpcodeSequence)
-sequence[1] = 12 # the "noun"
-sequence[2] = 2 # the "verb"
-print(decodeSequence(sequence)[0])
-
-# puzzle 2
-
-def getNounVerb(initialSequence, match):
+def getNounVerb(instructionLIst, match):
     for noun in range(0, 100):
         for verb in range(0, 100):
-            sequence = copy.deepcopy(initialSequence)
+            sequence = copy.deepcopy(instructionLIst)
             sequence[1] = noun
             sequence[2] = verb
-            if decodeSequence(sequence)[0] == match:
+            if decode(sequence)[0] == match:
                 return (noun, verb)
     return None
 
-# puzzle 2 anwser
 
-try:
-    noun, verb = getNounVerb(initialOpcodeSequence, match=19690720)
-    print("noun %s" % noun)
-    print("verb %s" % verb)
-    print(100 * noun + verb)
-except TypeError:
-    print('No solution found')
+if __name__ == '__main__':
+
+    # inputs
+
+    data = None
+    with open(__file__.replace('.py', '.input'), 'r') as f:
+        data = f.readlines()
+    instructionList = [int(i) for i in data[0].split(',')]
+
+    # puzzle 1 tests
+
+    assert decode([1, 0, 0, 0, 99]) == [2, 0, 0, 0, 99]
+    assert decode([2, 3, 0, 3, 99]) == [2, 3, 0, 6, 99]
+    assert decode([2, 4, 4, 5, 99, 0]) == [2, 4, 4, 5, 99, 9801]
+    assert decode([1, 1, 1, 4, 99, 5, 6, 0, 99]) == [30, 1, 1, 4, 2, 5, 6, 0, 99]
+
+    # puzzle 1 answer
+
+    sequence = copy.deepcopy(instructionList)
+    sequence[1] = 12 # the "noun"
+    sequence[2] = 2 # the "verb"
+    print(decode(sequence)[0])
+
+    # puzzle 2 anwser
+
+    try:
+        noun, verb = getNounVerb(instructionList, match=19690720)
+        print("noun %s" % noun)
+        print("verb %s" % verb)
+        print(100 * noun + verb)
+    except TypeError:
+        print('No solution found')
