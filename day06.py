@@ -82,7 +82,7 @@ if __name__ == '__main__':
 
     # puzzle 1 answer
 
-    puzzleTree = createTreeFromOrbitList([i.replace('\n', '') for i in data])
+    puzzleTree = createTreeFromOrbitList([i.strip() for i in data])
     assert 'COM' in puzzleTree and puzzleTree['COM'].parent is None
     print(computeOrbitsChecksum(puzzleTree))
 
