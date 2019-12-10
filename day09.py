@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import copy
-from itertools import permutations
 import logging
 
 
