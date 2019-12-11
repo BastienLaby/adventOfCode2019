@@ -4,68 +4,57 @@
 import math
 import itertools
 
-class Vector2D(object):
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
 
-    def norm(self):
-        return math.sqrt(self.x ** 2 + self.y ** 2)
+'''
+Pour chaque astéroïde
+   Initialiser un set de tuples de directions
+   Pour chaque autre astéroïde
+      Calculer la direction normalisée
+      L'ajouter au set
+   Afficher somme du set
+'''
 
-    def normalize(self):
-        norm = self.norm()
-        self.x /= norm
-        self.y /= norm
+def normalize(vec2):
+    norm = math.sqrt(vec2[0] ** 2 + vec2[1] ** 2)
+    vec2[0] /= norm
+    vec2[1] /= norm
+    return vec2
 
-    @classmethod
-    def dotProduct(cls, A, B):
-        return A.x * B.x + A.y * B.y
-
-    def __repr__(self):
-        return '(%s, %s)' % (self.x, self.y)
-
-    def __eq__(self, other):
-        if isinstance(other, Vector2D):
-            return self.x == other.x and self.y == other.y
-        return False
-
-
-class Asteroid(object):
-    def __init__(self, i, j):
-        self.i = i
-        self.j = j
-        self.linesOfSights = []
-
-    def __repr__(self):
-        return '(%s, %s)' % (self.i, self.j)
-
-
-def getMaxVisibleAsteroids(spaceMap):
+def getMaxAsteroidSeen(spaceMap):
 
     width = len(spaceMap)
     height = len(spaceMap[0])
 
-    asteroids = [Asteroid(i, j) for i, j in itertools.product(range(width), range(height)) if spaceMap[i][j] == '#']
-    for A in asteroids:
-        print(A.i, A.j)
-        for B in [i for i in asteroids if i != A]:
-            line = Vector2D(B.i - A.i, B.j - A.j)
-            line.normalize()
-            if not any(line == otherLine for otherLine in A.linesOfSights):
-                print('\tadd line for %s' % B)
-                A.linesOfSights.append(line)
-            else:
-                print('\t%s has already a similar line of sight' % B)
+    asteroids = [(i, j) for i, j in itertools.product(range(width), range(height)) if spaceMap[i][j] == '#']
+    maxCount = 0
 
-        print(A, len(A.linesOfSights))
+    for i, j in asteroids:
+
+        directions = set()
+
+        for i2, j2 in asteroids:
+
+            if i == i2 and j == j2:
+                continue
+
+            direction = normalize([i2 - i, j2 - j])
+            direction = [float('%.05f' % k) for k in direction]
+            directions.add(tuple(direction))
+
+        if len(directions) > maxCount:
+            maxCount = len(directions)
+
+    return maxCount
 
 
 if __name__ == '__main__':
 
-    assert(Vector2D(0, 1).norm() == 1)
-    assert(Vector2D(1, 1).norm() == math.sqrt(2))
+    assert getMaxAsteroidSeen('.#..#\n.....\n#####\n....#\n...##'.split('\n')) == 8
+    assert getMaxAsteroidSeen('......#.#.\n#..#.#....\n..#######.\n.#.#.###..\n.#..#.....\n..#....#.#\n#..#....#.\n.##.#..###\n##...#..#.\n.#....####'.split('\n')) == 33
+    assert getMaxAsteroidSeen('#.#...#.#.\n.###....#.\n.#....#...\n##.#.#.#.#\n....#.#.#.\n.##..###.#\n..#...##..\n..##....##\n......#...\n.####.###.'.split('\n')) == 35
+    assert getMaxAsteroidSeen('.#..#..###\n####.###.#\n....###.#.\n..###.##.#\n##.##.#.#.\n....###..#\n..#.#..#.#\n#..#.#.###\n.##...##.#\n.....#.#..'.split('\n')) == 41
+    assert getMaxAsteroidSeen('.#..##.###...#######\n##.############..##.\n.#.######.########.#\n.###.#######.####.#.\n#####.##.#.##.###.##\n..#####..#.#########\n####################\n#.####....###.#.#.##\n##.#################\n#####.##.###..####..\n..######..##.#######\n####.##.####...##..#\n.#####..#.######.###\n##...#.##########...\n#.##########.#######\n.####.#.###.###.#.##\n....##.##.###..#####\n.#.#.###########.###\n#.#.#.#####.####.###\n###.##.####.##.#..##'.split('\n')) == 210
 
-    spaceMap = '.#..#\n.....\n#####\n....#\n...##'
-    spaceMap = spaceMap.split('\n')
-
-    getMaxVisibleAsteroids(spaceMap)
+    with open(__file__.replace('.py', '.input'), 'r') as f:
+         spaceMap = [i.strip() for i in f.readlines()]
+    print(getMaxAsteroidSeen(spaceMap))
