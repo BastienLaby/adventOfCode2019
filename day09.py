@@ -108,13 +108,14 @@ class IntcodeProgram(object):
             for i in range(1, PCOUNT[opcode] + 1):
                 params.append(IntcodeParameter(self, self.intcode[self.adress + i], modes[-i]))
 
-            logging.debug('instruction %s (modes %s) ip %s rel %s intcode %s --> params %s' % (instruction, modes, self.adress, self.relativeBase, self.intcode, params))
+            # logging.debug('instruction %s (modes %s) ip %s rel %s intcode %s --> params %s' % (instruction, modes, self.adress, self.relativeBase, '[...]', params))
 
             # start opcodes tests
 
             initialAdress = self.adress
 
-            if opcode == 99: raise IntcodeEndProgramSignal()
+            if opcode == 99:
+                raise IntcodeEndProgramSignal()
 
             elif opcode == 1: # addition
                 params[2].writeValue(params[0].getValue() + params[1].getValue())
@@ -148,8 +149,9 @@ class IntcodeProgram(object):
             else:
                 raise Exception('Unknow opcode %s' % opcode)
 
-        if self.adress != initialAdress:
-            self.increaseAdressBy(PCOUNT[opcode] + 1)
+            # print(self.adress, initialAdress)
+            if self.adress == initialAdress:
+                self.increaseAdressBy(PCOUNT[opcode] + 1)
 
 
 
@@ -181,10 +183,8 @@ if __name__ == '__main__':
 
     program = IntcodeProgram(intcode.split(','), _input=1)
     logging.info(program.decode())
-    logging.info(program.kk)
 
     # puzzle 2 answer
 
     program = IntcodeProgram(intcode.split(','), _input=2)
     logging.info(program.decode())
-    logging.info(program.kk)
