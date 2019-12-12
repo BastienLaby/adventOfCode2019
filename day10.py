@@ -59,8 +59,8 @@ if __name__ == '__main__':
     mostEfficientAsteroid = getMaxAsteroidSeen(spaceMap)
     print(mostEfficientAsteroid)
 
-    O = mostEfficientAsteroid[1:]
-    asteroids = [(i, j) for i, j in itertools.product(range(len(spaceMap)), range(len(spaceMap[0]))) if spaceMap[j][i] == '#' and not (i == O[0] and j == O[1])]
+    Oi, Oj = mostEfficientAsteroid[1:]
+    asteroids = [(i, j) for i, j in itertools.product(range(len(spaceMap)), range(len(spaceMap[0]))) if spaceMap[j][i] == '#' and not (i == Oi and j == Oj)]
 
     def getAngleFromVector(i, j):
         angle = math.acos(i) if j > 0 else - math.acos(i)
@@ -69,33 +69,23 @@ if __name__ == '__main__':
         return angle
 
     asteroidsByAngle = {} # key = angle, value = list of directions
-    for A in asteroids:
-        D = [A[0] - O[0], A[1] - O[1]]
+    for Ai, Aj in asteroids:
+        D = [Ai - Oi, Aj - Oj]
         nD = normalized(D)
         angle = getAngleFromVector(nD[0], nD[1])
         angle = float('%.06f' % angle)
         asteroidsByAngle.setdefault(angle, [])
-        asteroidsByAngle[angle].append((D, A[0], A[1]))
+        asteroidsByAngle[angle].append((D, Ai, Aj))
 
     # sort asteroids of each angle by distance
     for angle, asteroidList in asteroidsByAngle.items():
         asteroidList.sort(key=lambda a: norm(a[0]))
 
-    killedAsteroids = 0
-    lastAsteroidKilled = None
+    killCount = 0
 
-    laserLoop = 1
-    while True:
-        breakLoop = False
+    while killCount < 200:
         for angle in sorted(asteroidsByAngle.keys()):
             if asteroidsByAngle[angle]:
-                lastAsteroidKilled = asteroidsByAngle[angle].pop(0)
-                killedAsteroids += 1
-                print('Kill asteroid %s a=%s (%sth)' % (lastAsteroidKilled[1:], angle, killedAsteroids))
-            if killedAsteroids == 200:
-                breakLoop = True
-                break
-        if breakLoop:
-            break
-
-        laserLoop += 1
+                killed = asteroidsByAngle[angle].pop(0)
+                killCount += 1
+                print('Kill asteroid %s (%sth)' % (killed[1:], killCount))
