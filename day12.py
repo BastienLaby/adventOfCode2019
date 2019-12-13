@@ -1,71 +1,45 @@
 # -*- coding: utf-8 -*-
 
-
+import parse
 from itertools import combinations
 
 
-class Moon(object):
-
-    def __init__(self, pos, vel):
-        self.pos = pos
-        self.vel = vel
-
-    def __repr__(self):
-        return 'pos=%s, vel=%s' % (self.pos, self.vel)
+def energy(moon):
+    return (abs(moon[0]) + abs(moon[1]) + abs(moon[2])) * (abs(moon[3]) + abs(moon[4]) + abs(moon[5]))
 
 
-class Vec3(object):
+def evolves(moons):
+    for a, b in combinations(moons, 2):
+        for i in [0, 1, 2]:
+            if a[i] < b[i]:
+                a[i + 3] += 1
+                b[i + 3] -= 1
+            elif a[i] > b[i]:
+                a[i + 3] -= 1
+                b[i + 3] += 1
+    for moon in moons:
+        moon[0] += moon[3]
+        moon[1] += moon[4]
+        moon[2] += moon[5]
 
-    def __init__(self, x, y, z):
-        self.x = x
-        self.y = y
-        self.z = z
 
-    def __iadd__(self, other):
-        self.x += other.x
-        self.y += other.y
-        self.z += other.z
-        return self
-
-    def __getitem__(self, key):
-        if key == 0: return self.x
-        elif key == 1: return self.y
-        elif key == 2: return self.z
-
-    def __setitem__(self, key, value):
-        if key == 0: self.x = value
-        elif key == 1: self.y = value
-        elif key == 2: self.z = value
-
-    def __repr__(self):
-        return '<x=%s, y=%s, z=%s>' % (self.x, self.y, self.z)
+def solve(moons, iterations):
+    for t in range(iterations):
+        # print(t, moons)
+        evolves(moons)
+    return sum([energy(m) for m in moons])
 
 
 if __name__ == '__main__':
 
+    moons = []
     with open(__file__.replace('.py', '.input'), 'r') as f:
-         spaceMap = [i.strip() for i in f.readlines()]
+        p = parse.compile('<x={:d}, y={:d}, z={:d}>')
+        for line in f.read().splitlines():
+            x, y, z = p.parse(line)
+            moons.append([x, y, z, 0, 0, 0])
 
-    moons = [
-        Moon(Vec3(-1, 0, 2), Vec3(0, 0, 0)),
-        Moon(Vec3(2, -10, -7), Vec3(0, 0, 0)),
-        Moon(Vec3(4, -8, 8), Vec3(0, 0, 0)),
-        Moon(Vec3(3, 5, -1), Vec3(0, 0, 0))
-    ]
+    assert solve([[-1, 0, 2, 0, 0, 0], [2, -10, -7, 0, 0, 0], [4, -8, 8, 0, 0, 0], [3, 5, -1, 0, 0, 0]], 10) == 179
+    assert solve([[-8, -10, 0, 0, 0, 0], [5, 5, 10, 0, 0, 0], [2, -7, 3, 0, 0, 0], [9, -8, -3, 0, 0, 0]], 100) == 1940
 
-    print('After 0 steps:')
-    for moon in moons:
-        print(moon)
-
-    for step in range(1, 5):
-        print('After %s steps:' % step)
-
-        for moonA, moonB in combinations(moons, 2):
-            for i in [0, 1, 2]:
-                if moonA.pos[i] != moonB.pos[i]:
-                    moonA.vel[i] += 1 if moonA.pos[i] < moonB.pos[i] else -1
-                    moonB.vel[i] += 1 if moonB.pos[i] < moonA.pos[i] else -1
-
-        for moon in moons:
-            moon.pos += moon.vel
-            print(moon)
+    print(solve(moons, 1000))
