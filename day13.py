@@ -10,7 +10,7 @@ tilesCharacters = {
     1: 'X',
     2: 'x',
     3: '-',
-    4: 'O'
+    4: 'o'
 }
 
 
@@ -18,12 +18,11 @@ def solve(intcode):
 
     grid = {} # key = pos, value = tile type
     program = IntcodeProgram(intcode)
-    # program.intcode[0] = '2'
+    program.intcode[0] = '2'
     program.input = 0
     score = 0
 
-    paddleAppears = False
-    ballAppears = False
+    xball, xpaddle = 0, 0
 
     while True:
 
@@ -33,39 +32,42 @@ def solve(intcode):
             y = program.decode()
             tile = program.decode()
 
-            if (x, y) == (-1, 0):
+            if x == -1 and y == 0:
                 score = tile
+                print('score', score)
             else:
                 grid[(x, y)] = tile
 
-            if tile == 3: # ball appears
-                ballAppears = True
-            if tile == 4: # paddle
-                paddleAppears = True
+            if tile == 3: # paddle
+                xpaddle = x
 
-            if ballAppears and paddleAppears:
-                xpaddle, ypaddle = [(pos[0], pos[1]) for (pos, typ) in grid.items() if typ == 3][0]
-                xball, yball = [(pos[0], pos[1]) for (pos, typ) in grid.items() if typ == 4][0]
-                print('ball %s %s' % (xball, yball))
-                print('paddle %s %s' % (xpaddle, ypaddle))
-                if xpaddle < xball:
-                    program.input = 1
-                elif xpaddle > xball:
-                    program.input = -1
-                else:
-                    program.input = 0
-                ballAppears = False
-                paddleAppears = False
+            if tile == 4: # ball
+                xball = x
 
         except IntcodeEndProgramSignal:
 
-            for j in range(0, 30):
-                for i in range(-50, 50):
-                    print(tilesCharacters[grid.get((i, j), 0)], end=' ')
-                print()
-            print('score %s' % score)
+            '''
+            When do the disp^lay stop and the joystick moves ??
+            '''
 
-            exit()
+            print('IntcodeEndProgramSignal')
+
+            program.adress = 0
+            if xpaddle < xball:
+                program.input = 1
+            elif xpaddle > xball:
+                program.input = -1
+            else:
+                program.input = 0
+
+            if not list(grid.values()).count(2):
+                for j in range(0, 30):
+                    for i in range(-50, 50):
+                        print(tilesCharacters[grid.get((i, j), 0)], end=' ')
+                    print()
+                break
+            print('Number of blocks : %s' % list(grid.values()).count(2))
+            # grid = {}
 
     print('Number of blocks : %s' % list(grid.values()).count(2))
     print('Score : %s' % score)
