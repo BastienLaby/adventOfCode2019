@@ -52,7 +52,6 @@ def solvePuzzle2(moons):
                 moon[2] += moon[5]
             if moons == initialMoons:
                 loopIndexes[comp] = it
-                print('loopIndexes[%s] = %s' % (comp, it))
                 break
 
     def lcm(a, b):
