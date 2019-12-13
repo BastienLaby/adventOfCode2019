@@ -127,7 +127,8 @@ class IntcodeProgram(object):
             elif opcode == 2: # multiplication
                 params[2].writeValue(params[0].getValue() * params[1].getValue())
 
-            elif opcode == 3: # write input
+            elif opcode == 3: # read input
+                print('read input %s' % self.input)
                 params[0].writeValue(self.input)
 
             elif opcode == 4: # return output

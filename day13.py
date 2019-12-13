@@ -22,7 +22,7 @@ def solve(intcode):
     program.input = 0
     score = 0
 
-    xball, xpaddle = 0, 0
+    xball, xpaddle = None, None
 
     while True:
 
@@ -34,15 +34,25 @@ def solve(intcode):
 
             if x == -1 and y == 0:
                 score = tile
-                print('score', score)
             else:
                 grid[(x, y)] = tile
 
-            if tile == 3: # paddle
-                xpaddle = x
+                if tile == 3: # paddle
+                    xpaddle = x
 
-            if tile == 4: # ball
-                xball = x
+                if tile == 4: # ball
+                    xball = x
+
+            if xpaddle and xball:
+                print('xpaddle and xball detected - tiles drawn %s - block drawn %s' % (len(grid), list(grid.values()).count(2)))
+                if xpaddle < xball:
+                    program.input = 1
+                elif xpaddle > xball:
+                    program.input = -1
+                else:
+                    program.input = 0
+                xpaddle, xball = None, None
+                grid = {}
 
         except IntcodeEndProgramSignal:
 
@@ -50,15 +60,17 @@ def solve(intcode):
             When do the disp^lay stop and the joystick moves ??
             '''
 
-            print('IntcodeEndProgramSignal')
+            # for j in range(0, 30):
+            #     for i in range(-50, 50):
+            #         print(tilesCharacters[grid.get((i, j), 0)], end=' ')
+            #     print()
+
+            print('IntcodeEndProgramSignal - tiles drawn %s' % len(grid))
+            break
+
 
             program.adress = 0
-            if xpaddle < xball:
-                program.input = 1
-            elif xpaddle > xball:
-                program.input = -1
-            else:
-                program.input = 0
+
 
             if not list(grid.values()).count(2):
                 for j in range(0, 30):
