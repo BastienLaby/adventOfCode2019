@@ -47,6 +47,8 @@ class IntcodeParameter(object):
         elif self.mode == PMODES['RELATIVE']:
             adress = self.value + self.program.relativeBase
         self.program.increaseIntcodeSize(adress)
+        # print(adress)
+        # print(self.program.intcode[adress-2:adress+2])
         return int(self.program.intcode[adress])
 
     def writeValue(self, value):
@@ -59,6 +61,9 @@ class IntcodeParameter(object):
         elif self.mode == PMODES['RELATIVE']:
             adress = self.program.relativeBase + self.value
         self.program.increaseIntcodeSize(adress)
+        if value is None:
+            print('value is none !!')
+            exit()
         self.program.intcode[adress] = str(value)
 
     def __str__(self):
@@ -104,18 +109,17 @@ class IntcodeProgram(object):
             instruction = self.intcode[self.adress].zfill(2 + max(PCOUNT.values()))
             opcode = int(instruction[-2:])
             modes = instruction[:-2]
+            # logging.info('instruction %s (modes %s) ip %s rel %s intcode %s' % (instruction, modes, self.adress, self.relativeBase, self.intcode[:5]))
             params = []
             for i in range(1, PCOUNT[opcode] + 1):
                 params.append(IntcodeParameter(self, self.intcode[self.adress + i], modes[-i]))
-
-            # logging.debug('instruction %s (modes %s) ip %s rel %s intcode %s --> params %s' % (instruction, modes, self.adress, self.relativeBase, '[...]', params))
+            # logging.info('instruction %s (modes %s) ip %s rel %s intcode %s --> params %s' % (instruction, modes, self.adress, self.relativeBase, '[...]', params))
 
             # start opcodes tests
 
             initialAdress = self.adress
 
-            if opcode == 99:
-                raise IntcodeEndProgramSignal()
+            if opcode == 99: raise IntcodeEndProgramSignal()
 
             elif opcode == 1: # addition
                 params[2].writeValue(params[0].getValue() + params[1].getValue())
@@ -123,11 +127,13 @@ class IntcodeProgram(object):
             elif opcode == 2: # multiplication
                 params[2].writeValue(params[0].getValue() * params[1].getValue())
 
-            elif opcode == 3: # write input
+            elif opcode == 3: # read input
+                print('read input %s' % self.input)
                 params[0].writeValue(self.input)
 
             elif opcode == 4: # return output
                 self.output = params[0].getValue()
+                self.increaseAdressBy(PCOUNT[opcode] + 1)
                 return self.output
 
             elif opcode == 5: # jump-if-true
@@ -149,11 +155,8 @@ class IntcodeProgram(object):
             else:
                 raise Exception('Unknow opcode %s' % opcode)
 
-            # print(self.adress, initialAdress)
             if self.adress == initialAdress:
                 self.increaseAdressBy(PCOUNT[opcode] + 1)
-
-
 
 if __name__ == '__main__':
 
@@ -188,3 +191,4 @@ if __name__ == '__main__':
 
     program = IntcodeProgram(intcode.split(','), _input=2)
     logging.info(program.decode())
+

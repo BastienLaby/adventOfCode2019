@@ -1,108 +1,72 @@
 # -*- coding: utf-8 -*-
 
 import logging
-import math
-
-# import png # py -3.X -m pip install PyPNG
-
 
 from day09 import IntcodeProgram, IntcodeEndProgramSignal
 
 
-directionCharacter = {
-    (0, 1): '^',
-    (0, -1): 'v',
+directionCharacters = {
     (1, 0): '>',
     (-1, 0): '<',
+    (0, 1): '^',
+    (0, -1): 'v',
 }
 
-colorCharacter = {
+colorCharacters = {
     0: '.',
     1: '#'
 }
 
 
-def run(intcode):
+def solve(intcode, _input=0, printGrid=False):
 
-    x, y = 0, 0
-    dx, dy = 0, 1
-    program = IntcodeProgram(intcode, _input=0)
-    grid = {}
+    grid = {} # key = (i, j), value = value
+    x, y, = 0, 0
+    dx, dy = 0, -1
 
-    k = 0
+    program = IntcodeProgram(intcode)
+    program.input = _input
+
     while True:
-        if k > 20:
-            exit()
-        k += 1
-        
-        color = program.decode()
-        print('output color %s' % color)
-        grid[(x, y)] = int(color)
 
-        turn = program.decode()
-        print('output turn %s' % turn)
-        dx, dy = (dy, -dx) if turn else (-dy, dx)
-        x += dx
-        y += dy
+        try:
+            color = program.decode()
+            grid[(x, y)] = color
 
-        # for j in range(-2, 3)[::-1]:
-        #     for i in range(-2, 3):
-        #         if (i, j) == (x, y):
-        #             print(directionCharacter[(dx, dy)], end='')
-        #         else:
-        #             print(colorCharacter[grid.get((x, y), 0)], end='')
-        #     print()
-        # print()
-        
-        program.input = grid.get((x, y), 0)
+            turn = program.decode() # 0 : left / 1 : right
+            dx, dy = (-dy, dx) if turn else (dy, -dx)
+            x += dx
+            y += dy
+
+            program.input = grid.get((x, y), 0)
+
+        except IntcodeEndProgramSignal:
+            break
+
+    print(len(grid))
+
+    if printGrid:
+        for j in range(-10, 10):
+            for i in range(-50, 50):
+                if (i, j) == (x, y):
+                    print(directionCharacters[(dx, dy)], end=' ')
+                else:
+                    print(colorCharacters[grid.get((i, j), 0)], end=' ')
+            print()
+
 
 if __name__ == '__main__':
 
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.INFO)
 
-    # puzzle 1
+    # puzzle 1 answer
 
     intcode = None
     with open(__file__.replace('.py', '.input'), 'r') as f:
          intcode = f.readlines()[0].split(',')
 
-    # run(intcode)
+    solve(intcode, _input=0)
 
-    program = IntcodeProgram(intcode, _input=0)
-    program.decode()
-    print(program.output)
-    program.decode()
-    print(program.output)
+    # puzzle 2
 
-
-
-# (0, 0) (0, 1)
-# output color 1
-# output turn 0
-# (-1, 0) (-1, 0)
-# output color 1
-# output turn 1
-# (-1, 1) (0, 1)
-# output color 1
-# output turn 0
-# (-2, 1) (-1, 0)
-# output color 1
-# output turn 0
-# (-2, 0) (0, -1)
-# output color 1
-# output turn 1
-# (-3, 0) (-1, 0)
-# output color 1
-# output turn 0
-# (-3, -1) (0, -1)
-# output color 1
-# output turn 1
-# (-4, -1) (-1, 0)
-# output color 1
-# output turn 1
-# (-4, 0) (0, 1)
-# output color 1
-# output turn 1
-# (-3, 0) (1, 0)
-# output color 0
-# output turn 1
+    solve(intcode, _input=1, printGrid=True)

@@ -1,71 +1,79 @@
 # -*- coding: utf-8 -*-
 
-
+import parse
 from itertools import combinations
+import copy
+import math
 
 
-class Moon(object):
-
-    def __init__(self, pos, vel):
-        self.pos = pos
-        self.vel = vel
-
-    def __repr__(self):
-        return 'pos=%s, vel=%s' % (self.pos, self.vel)
+def energy(moon):
+    return (abs(moon[0]) + abs(moon[1]) + abs(moon[2])) * (abs(moon[3]) + abs(moon[4]) + abs(moon[5]))
 
 
-class Vec3(object):
+def evolves(moons, comp):
+    '''
+    Evolves a component (x, y or z as 0, 1 or 2) of the system
+    '''
+    for a, b in combinations(moons, 2):
+        if a[comp] < b[comp]:
+            a[comp + 3] += 1
+            b[comp + 3] -= 1
+        elif a[comp] > b[comp]:
+            a[comp + 3] -= 1
+            b[comp + 3] += 1
 
-    def __init__(self, x, y, z):
-        self.x = x
-        self.y = y
-        self.z = z
 
-    def __iadd__(self, other):
-        self.x += other.x
-        self.y += other.y
-        self.z += other.z
-        return self
 
-    def __getitem__(self, key):
-        if key == 0: return self.x
-        elif key == 1: return self.y
-        elif key == 2: return self.z
+def solvePuzzle1(moons, iterations):
+    for t in range(iterations):
+        for comp in [0, 1, 2]:
+            evolves(moons, comp)
+        for moon in moons:
+            moon[0] += moon[3]
+            moon[1] += moon[4]
+            moon[2] += moon[5]
+    return sum([energy(m) for m in moons])
 
-    def __setitem__(self, key, value):
-        if key == 0: self.x = value
-        elif key == 1: self.y = value
-        elif key == 2: self.z = value
 
-    def __repr__(self):
-        return '<x=%s, y=%s, z=%s>' % (self.x, self.y, self.z)
+def solvePuzzle2(moons):
 
+    initialMoons = copy.deepcopy(moons)
+
+    loopIndexes = [0, 0, 0] # index when each component will loop
+
+    for comp in [0, 1 ,2]:
+        it = 0
+        while True:
+            it += 1
+            evolves(moons, comp)
+            for moon in moons:
+                moon[0] += moon[3]
+                moon[1] += moon[4]
+                moon[2] += moon[5]
+            if moons == initialMoons:
+                loopIndexes[comp] = it
+                break
+
+    def lcm(a, b):
+        return abs(a * b) // math.gcd(a, b)
+
+    return lcm(lcm(loopIndexes[0], loopIndexes[1]), loopIndexes[2])
 
 if __name__ == '__main__':
 
+    initialMoons = []
     with open(__file__.replace('.py', '.input'), 'r') as f:
-         spaceMap = [i.strip() for i in f.readlines()]
+        p = parse.compile('<x={:d}, y={:d}, z={:d}>')
+        for line in f.read().splitlines():
+            x, y, z = p.parse(line)
+            initialMoons.append([x, y, z, 0, 0, 0])
 
-    moons = [
-        Moon(Vec3(-1, 0, 2), Vec3(0, 0, 0)),
-        Moon(Vec3(2, -10, -7), Vec3(0, 0, 0)),
-        Moon(Vec3(4, -8, 8), Vec3(0, 0, 0)),
-        Moon(Vec3(3, 5, -1), Vec3(0, 0, 0))
-    ]
+    assert solvePuzzle1([[-1, 0, 2, 0, 0, 0], [2, -10, -7, 0, 0, 0], [4, -8, 8, 0, 0, 0], [3, 5, -1, 0, 0, 0]], 10) == 179
+    assert solvePuzzle1([[-8, -10, 0, 0, 0, 0], [5, 5, 10, 0, 0, 0], [2, -7, 3, 0, 0, 0], [9, -8, -3, 0, 0, 0]], 100) == 1940
 
-    print('After 0 steps:')
-    for moon in moons:
-        print(moon)
+    print(solvePuzzle1(copy.deepcopy(initialMoons), 1000))
 
-    for step in range(1, 5):
-        print('After %s steps:' % step)
+    assert solvePuzzle2([[-1, 0, 2, 0, 0, 0], [2, -10, -7, 0, 0, 0], [4, -8, 8, 0, 0, 0], [3, 5, -1, 0, 0, 0]]) == 2772
+    assert solvePuzzle2([[-8, -10, 0, 0, 0, 0], [5, 5, 10, 0, 0, 0], [2, -7, 3, 0, 0, 0], [9, -8, -3, 0, 0, 0]]) == 4686774924
 
-        for moonA, moonB in combinations(moons, 2):
-            for i in [0, 1, 2]:
-                if moonA.pos[i] != moonB.pos[i]:
-                    moonA.vel[i] += 1 if moonA.pos[i] < moonB.pos[i] else -1
-                    moonB.vel[i] += 1 if moonB.pos[i] < moonA.pos[i] else -1
-
-        for moon in moons:
-            moon.pos += moon.vel
-            print(moon)
+    print(solvePuzzle2(copy.deepcopy(initialMoons)))
