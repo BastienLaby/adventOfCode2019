@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 
 import logging
+import text_to_image
 
 from day09 import IntcodeProgram, IntcodeEndProgramSignal
+from imglib import text_image
 
 
 tilesCharacters = {
@@ -23,6 +25,7 @@ def solve(intcode):
     score = 0
 
     xball, xpaddle = None, None
+    step = 1
 
     while True:
 
@@ -32,57 +35,56 @@ def solve(intcode):
             y = program.decode()
             tile = program.decode()
 
+            # output (-1, 0) is the score
             if x == -1 and y == 0:
                 score = tile
+                print('Score : %s - Blocks Lefts : %s' % (score, list(grid.values()).count(2)))
+
+                # save the grid representation
+                minX = min([i[0] for i in grid.keys()])
+                maxX = max([i[0] for i in grid.keys()])
+                minY = min([i[1] for i in grid.keys()])
+                maxY = max([i[1] for i in grid.keys()])
+                asciiImage = []
+                for j in range(minY, maxY + 1):
+                    rowStr = []
+                    for i in range(minX, maxX + 1):
+                        rowStr.append(tilesCharacters[grid[(i, j)]])
+                    asciiImage.append(''.join(rowStr))
+                asciiImage.append('*' * (maxX - minX + 1))
+                scoreStr = 'Score : %s' % score
+                asciiImage.append('*' + scoreStr.center(maxX - minX - 1) + '*')
+                asciiImage.append('*' * (maxX - minX + 1))
+                with open('content.txt', 'w') as f:
+                    f.writelines('\n'.join(asciiImage))
+                image = text_image('content.txt')
+                image.save('bricks/bricks.%.05d.png' % step)
+                step += 1
+    
+            # else, its a game tile
             else:
+
+                # fill the grid
                 grid[(x, y)] = tile
 
-                if tile == 3: # paddle
+                # save the paddle position when it appears
+                if tile == 3:
                     xpaddle = x
 
-                if tile == 4: # ball
+                # when the ball appears, move the paddle depending on the two elements positions
+                if tile == 4:
                     xball = x
-
-            if xpaddle and xball:
-                print('xpaddle and xball detected - tiles drawn %s - block drawn %s' % (len(grid), list(grid.values()).count(2)))
-                if xpaddle < xball:
-                    program.input = 1
-                elif xpaddle > xball:
-                    program.input = -1
-                else:
-                    program.input = 0
-                xpaddle, xball = None, None
-                grid = {}
+                    if xpaddle: # in the first loop, the paddle appears after the ball
+                        if xpaddle < xball:
+                            program.input = 1
+                        elif xpaddle > xball:
+                            program.input = -1
+                        else:
+                            program.input = 0
 
         except IntcodeEndProgramSignal:
-
-            '''
-            When do the disp^lay stop and the joystick moves ??
-            '''
-
-            # for j in range(0, 30):
-            #     for i in range(-50, 50):
-            #         print(tilesCharacters[grid.get((i, j), 0)], end=' ')
-            #     print()
-
-            print('IntcodeEndProgramSignal - tiles drawn %s' % len(grid))
+            print('End of the game !')
             break
-
-
-            program.adress = 0
-
-
-            if not list(grid.values()).count(2):
-                for j in range(0, 30):
-                    for i in range(-50, 50):
-                        print(tilesCharacters[grid.get((i, j), 0)], end=' ')
-                    print()
-                break
-            print('Number of blocks : %s' % list(grid.values()).count(2))
-            # grid = {}
-
-    print('Number of blocks : %s' % list(grid.values()).count(2))
-    print('Score : %s' % score)
 
 
 if __name__ == '__main__':
