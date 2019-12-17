@@ -1,72 +1,97 @@
 # -*- coding: utf-8 -*-
 
 
-class Recipe:
+class Factory(object):
 
-    def __init__(self, name, count=1, components=None):
-        self.name = name
-        self.count = count # material count in the recipe
-        self.components = components
+    DEFAULT_MATERIAL = 'ORE'
 
-    def getOre(self):
+    def __init__(self):
+        self.recipes = [] # one recipe = [(result, amount), (ingredient1, amount), (ingredient2, amount), ...]
+        self.materials = {} # {name: count} the amount of available materials
+        self.burntMaterials = {} # {name: count} the amount of materials already used in recipes
+
+    def addRecipe(self, recipe):
         '''
-        Return the number of ORE needed to build 1 of this material.
+        Add a recipe to the catalog and add an entry of every components in the material/burntMaterials dictionnaries
         '''
-        print(self.name)
-        if self.name == 'ORE':
-            return self.count
-        else:
-            s = 0
-            for comp, count in self.components:
-                print('>%s %s' % (comp.name, count))
-                s += (count * comp.getOre())
-            return s
+        for comp, amount in recipe:
+            self.materials.setdefault(comp, 0)
+            self.burntMaterials.setdefault(comp, 0)
+        self.recipes.append(recipe)
+
+    def getBestRecipeFor(self, material, amount):
+        '''
+        Return the most efficient recipe to produce the amount of given materials
+        '''
+        bestRecipe = None
+        for recipe in [i for i in self.recipes if i[0][0] == material]:
+            if not bestRecipe:
+                bestRecipe = recipe
+            elif recipe[0][1] < bestRecipe[0][1]:
+                bestRecipe = recipe
+            if recipe[0][1] == amount:
+                return bestRecipe
+        if bestRecipe is None:
+            raise Exception('Cant find a correct recipe for %s %s' % (material, amount))
+        return bestRecipe
+
+    def produces(self, material, amount):
+        '''
+        Produces materials following the best recipe accoring to given material/amount.
+        If we don't have enough materials to produce ingredients, produces the missing amount of ingredients.
+        '''
+
+        if material == self.DEFAULT_MATERIAL: # ORE
+            self.materials[material] += amount
+            return
+
+        recipe = self.getBestRecipeFor(material, amount)
+
+        # verify ingredients quantity
+
+        for ingredient, amount in recipe[1:]:
+            while self.materials[ingredient] < amount:
+                self.produces(ingredient, amount - self.materials[ingredient])
+            self.materials[ingredient] -= amount
+            self.burntMaterials[ingredient] += amount
+
+        # produce
+
+        self.materials[recipe[0][0]] += recipe[0][1]
 
 
-'''
-Partant de la recette FUEL:
-
-    Pour chaque recette:
-        Pour chaque couple Ingredient/Quantité:
-            Trouver la recette produisant le minimum nécessaire
-                Recommencer
-            Si seul ingrédient = ORE, retourner ORE
-'''
-
-
-ore = Recipe('ORE')
-a = Recipe('A', 10, [(ore, 10)])
-b = Recipe('B', 1, [(ore, 1)])
-fuel = Recipe('FUEL', 1, [(a, 7), (b, 1)])
-
-print(fuel.getOre())
+def parseResipe(recipeStr):
+    recipe = []
+    amount, mat = recipeStr.split(' => ')[-1].split(' ')
+    recipe.append([mat, int(amount)])
+    for ingredient in recipeStr.split(' => ')[0].split(', '):
+        amount, mat = ingredient.split(' ')
+        recipe.append([mat, int(amount)])
+    return recipe
 
 
-
-# class Recipe(object):
-
-#     ingredients = {} # {material: count}
-#     result = [] # [material, count]
-
-#     def addIngredient(self, mat, count):
-#         self.ingredients[mat] = count
-    
-#     def setResult(self, mat, count):
-#         self.result = [mat, count]
-    
-#     def __repr__(self):
-#         return ', '.join(['%s %s' % (j, i) for i, j in self.ingredients.items()]) + ' => %s %s' % (self.result[1], self.result[0])
+def getNeededORE(recipes):
+    factory = Factory()
+    for recipeStr in recipes:
+        recipe = parseResipe(recipeStr)
+        factory.addRecipe(recipe)
+    factory.produces('FUEL', 1)
+    return factory.burntMaterials['ORE']
 
 
-# if __name__ == '__main__':
+if __name__ == '__main__':
 
-#     with open(__file__.replace('.py', '.input'), 'r') as f:
-#         recipes = [i.strip() for i in f.readlines()]
+    # puzzle 1 tests
 
-#     fuelRecipe = [i for i in recipes if i.endswith('FUEL')][0]
+    assert getNeededORE(['10 ORE => 10 A', '1 ORE => 1 B', '7 A, 1 B => 1 C', '7 A, 1 C => 1 D', '7 A, 1 D => 1 E', '7 A, 1 E => 1 FUEL']) == 31
+    assert getNeededORE(['9 ORE => 2 A', '8 ORE => 3 B', '7 ORE => 5 C', '3 A, 4 B => 1 AB', '5 B, 7 C => 1 BC', '4 C, 1 A => 1 CA', '2 AB, 3 BC, 4 CA => 1 FUEL']) == 165
+    assert getNeededORE(['157 ORE => 5 NZVS', '165 ORE => 6 DCFZ', '44 XJWVT, 5 KHKGT, 1 QDVJ, 29 NZVS, 9 GPVTF, 48 HKGWZ => 1 FUEL', '12 HKGWZ, 1 GPVTF, 8 PSHF => 9 QDVJ', '179 ORE => 7 PSHF', '177 ORE => 5 HKGWZ', '7 DCFZ, 7 PSHF => 2 XJWVT', '165 ORE => 2 GPVTF', '3 DCFZ, 7 NZVS, 5 HKGWZ, 10 PSHF => 8 KHKGT']) == 13312
+    assert getNeededORE(['2 VPVL, 7 FWMGM, 2 CXFTF, 11 MNCFX => 1 STKFG', '17 NVRVD, 3 JNWZP => 8 VPVL', '53 STKFG, 6 MNCFX, 46 VJHF, 81 HVMC, 68 CXFTF, 25 GNMV => 1 FUEL', '22 VJHF, 37 MNCFX => 5 FWMGM', '139 ORE => 4 NVRVD', '144 ORE => 7 JNWZP', '5 MNCFX, 7 RFSQX, 2 FWMGM, 2 VPVL, 19 CXFTF => 3 HVMC', '5 VJHF, 7 MNCFX, 9 VPVL, 37 CXFTF => 6 GNMV', '145 ORE => 6 MNCFX', '1 NVRVD => 8 CXFTF', '1 VJHF, 6 MNCFX => 4 RFSQX', '176 ORE => 6 VJHF']) == 180697
+    assert getNeededORE(['171 ORE => 8 CNZTR', '7 ZLQW, 3 BMBT, 9 XCVML, 26 XMNCP, 1 WPTQ, 2 MZWV, 1 RJRHP => 4 PLWSL', '114 ORE => 4 BHXH', '14 VRPVC => 6 BMBT', '6 BHXH, 18 KTJDG, 12 WPTQ, 7 PLWSL, 31 FHTLT, 37 ZDVW => 1 FUEL', '6 WPTQ, 2 BMBT, 8 ZLQW, 18 KTJDG, 1 XMNCP, 6 MZWV, 1 RJRHP => 6 FHTLT', '15 XDBXC, 2 LTCX, 1 VRPVC => 6 ZLQW', '13 WPTQ, 10 LTCX, 3 RJRHP, 14 XMNCP, 2 MZWV, 1 ZLQW => 1 ZDVW', '5 BMBT => 4 WPTQ', '189 ORE => 9 KTJDG', '1 MZWV, 17 XDBXC, 3 XCVML => 2 XMNCP', '12 VRPVC, 27 CNZTR => 2 XDBXC', '15 KTJDG, 12 BHXH => 5 XCVML', '3 BHXH, 2 VRPVC => 7 MZWV', '121 ORE => 7 VRPVC', '7 XCVML => 6 RJRHP', '5 BHXH, 4 VRPVC => 5 LTCX']) == 2210736
 
-#     print(fuelRecipe)
+    # puzzle 1 answer
 
+    with open(__file__.replace('.py', '.input'), 'r') as f:
+        recipes = [i.strip() for i in f.readlines()]
 
-
-
+    print(getNeededORE(recipes))
