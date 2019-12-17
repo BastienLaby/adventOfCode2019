@@ -1,82 +1,112 @@
 # -*- coding: utf-8 -*-
 
 
+from math import ceil
+
+class OutOfOreException(Exception):
+    pass
+
+
 class Factory(object):
 
     DEFAULT_MATERIAL = 'ORE'
 
     def __init__(self):
-        self.recipes = [] # one recipe = [(result, amount), (ingredient1, amount), (ingredient2, amount), ...]
-        self.materials = {} # {name: count} the amount of available materials
-        self.burntMaterials = {} # {name: count} the amount of materials already used in recipes
+        self.recipes = {} # one recipe = [(result, amount), (ingredient1, amount), (ingredient2, amount), ...]
+        self.materials = {'ORE': 0} # {name: count} the amount of available materials
+        self.burntMaterials = {'ORE': 0} # {name: count} the amount of materials already used in recipes
+        self.mineOre = True
 
-    def addRecipe(self, recipe):
-        '''
-        Add a recipe to the catalog and add an entry of every components in the material/burntMaterials dictionnaries
-        '''
-        for comp, amount in recipe:
-            self.materials.setdefault(comp, 0)
-            self.burntMaterials.setdefault(comp, 0)
-        self.recipes.append(recipe)
+    def addRecipe(self, material, recipe):
+        self.recipes[material] = recipe
+        self.materials.setdefault(material, 0)
+        self.burntMaterials.setdefault(material, 0)
 
-    def getBestRecipeFor(self, material, amount):
+    def produces(self, material):
         '''
-        Return the most efficient recipe to produce the amount of given materials
+        Produces the recipe for the given material.
+        If we don't have enough materials to produce ingredients, produces the recipe of the ingredient.
         '''
-        bestRecipe = None
-        for recipe in [i for i in self.recipes if i[0][0] == material]:
-            if not bestRecipe:
-                bestRecipe = recipe
-            elif recipe[0][1] < bestRecipe[0][1]:
-                bestRecipe = recipe
-            if recipe[0][1] == amount:
-                return bestRecipe
-        if bestRecipe is None:
-            raise Exception('Cant find a correct recipe for %s %s' % (material, amount))
-        return bestRecipe
 
-    def produces(self, material, amount):
-        '''
-        Produces materials following the best recipe accoring to given material/amount.
-        If we don't have enough materials to produce ingredients, produces the missing amount of ingredients.
-        '''
+        self.materials.setdefault(material, 0)
+        self.burntMaterials.setdefault(material, 0)
 
         if material == self.DEFAULT_MATERIAL: # ORE
-            self.materials[material] += amount
+            self.materials.setdefault(material, 0)
+            self.materials[material] += 1
             return
 
-        recipe = self.getBestRecipeFor(material, amount)
+        # verify ingredients quantity. If not enought, produces as many recipe as needed
 
-        # verify ingredients quantity
+        for ingredient, amount in self.recipes[material][1:]:
+            quantityNeeded = max(0, amount - self.materials[ingredient])
+            if ingredient == 'ORE':
+                if self.mineOre:
+                    self.materials[ingredient] += quantityNeeded
+                else:
+                    raise OutOfOreException()
+            else:
+                recipeCount = ceil(quantityNeeded / self.recipes[ingredient][0])
+                for i in range(recipeCount):
+                    self.produces(ingredient)
 
-        for ingredient, amount in recipe[1:]:
-            while self.materials[ingredient] < amount:
-                self.produces(ingredient, amount - self.materials[ingredient])
             self.materials[ingredient] -= amount
             self.burntMaterials[ingredient] += amount
 
-        # produce
-
-        self.materials[recipe[0][0]] += recipe[0][1]
+        self.materials[material] += self.recipes[material][0]
+        self.burntMaterials[material] += self.recipes[material][0]
 
 
 def parseResipe(recipeStr):
     recipe = []
-    amount, mat = recipeStr.split(' => ')[-1].split(' ')
-    recipe.append([mat, int(amount)])
+    amount, material = recipeStr.split(' => ')[-1].split(' ')
+    recipe.append(int(amount))
     for ingredient in recipeStr.split(' => ')[0].split(', '):
         amount, mat = ingredient.split(' ')
         recipe.append([mat, int(amount)])
-    return recipe
+    return material, recipe
 
 
 def getNeededORE(recipes):
     factory = Factory()
     for recipeStr in recipes:
-        recipe = parseResipe(recipeStr)
-        factory.addRecipe(recipe)
-    factory.produces('FUEL', 1)
+        material, recipe = parseResipe(recipeStr)
+        factory.addRecipe(material, recipe)
+    factory.produces('FUEL')
     return factory.burntMaterials['ORE']
+
+
+def getMaxFuel(recipes, ore=1000000000000):
+
+    factory = Factory()
+    for recipeStr in recipes:
+        material, recipe = parseResipe(recipeStr)
+        factory.addRecipe(material, recipe)
+
+    # Produce one time
+    factory.produces('FUEL')
+    print(factory.materials)
+    print(factory.burntMaterials)
+
+    minimumOre = factory.burntMaterials['ORE']
+    minimumFuel = ore // minimumOre
+
+    print('minimumOre %s' % minimumOre)
+    print('minimumFuel %s' % (minimumFuel))
+
+    for mat in factory.materials:
+        factory.materials[mat] *= minimumFuel
+    factory.materials['ORE'] = ore - minimumOre * minimumFuel
+
+    factory.mineOre = False
+    while True:
+        try:
+            factory.produces('FUEL')
+        except OutOfOreException:
+            break
+
+    print(factory.materials)
+
 
 
 if __name__ == '__main__':
@@ -95,3 +125,8 @@ if __name__ == '__main__':
         recipes = [i.strip() for i in f.readlines()]
 
     print(getNeededORE(recipes))
+
+    # puzzle 2
+
+
+    getMaxFuel(['157 ORE => 5 NZVS', '165 ORE => 6 DCFZ', '44 XJWVT, 5 KHKGT, 1 QDVJ, 29 NZVS, 9 GPVTF, 48 HKGWZ => 1 FUEL', '12 HKGWZ, 1 GPVTF, 8 PSHF => 9 QDVJ', '179 ORE => 7 PSHF', '177 ORE => 5 HKGWZ', '7 DCFZ, 7 PSHF => 2 XJWVT', '165 ORE => 2 GPVTF', '3 DCFZ, 7 NZVS, 5 HKGWZ, 10 PSHF => 8 KHKGT'])
