@@ -1,2 +1,3 @@
 /.vscode/tasks.json
-bricks/*
+day*/img
+__pycache__/**
