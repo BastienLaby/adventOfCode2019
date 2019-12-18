@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 
+import sys
+import os
 import logging
 
-from day09 import IntcodeProgram, IntcodeEndProgramSignal
-
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+from day09.day09 import IntcodeProgram, IntcodeEndProgramSignal
 
 directionCharacters = {
     (1, 0): '>',

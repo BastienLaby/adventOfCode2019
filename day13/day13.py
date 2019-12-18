@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 
+import sys
+import os
 import logging
-import text_to_image
 
-from day09 import IntcodeProgram, IntcodeEndProgramSignal
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+from day09.day09 import IntcodeProgram, IntcodeEndProgramSignal
 from imglib import text_image
 
 
@@ -58,7 +60,7 @@ def solve(intcode):
                 with open('content.txt', 'w') as f:
                     f.writelines('\n'.join(asciiImage))
                 image = text_image('content.txt')
-                image.save('bricks/bricks.%.05d.png' % step)
+                image.save('day13/img/bricks.%.05d.png' % step)
                 step += 1
     
             # else, its a game tile
